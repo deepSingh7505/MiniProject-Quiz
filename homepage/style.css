@@ -1,0 +1,93 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e69722 0%, #764ba2 100%);
+    font-weight: 500;
+}
+.container{
+    /* border: 2px solid black; */
+    width: 70%;
+    margin: 20px;
+    padding: 20px;
+    border-radius: 10px;
+    background: white;
+}
+.top{
+    /* border: 2px solid black;   */
+    border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+}
+.quiz{
+    /* border: 2px solid;  */
+    border-radius: 10px;
+    padding: 10px;
+    margin: 20px;
+    box-shadow: 0 0 10px 1px;
+}
+.que{
+     /* border: 2px solid black;   */
+    border-radius: 5px;
+     padding: 5px;
+      /* margin: 5px; */
+       background: #f8f9fa;
+}
+.ans{
+    padding: 5px;
+}
+.input{
+    width: 95%;
+    padding: 5px;
+    border-radius: 5px;
+    border: 2px solid #e0e0e0;
+    margin: 3px;
+}
+.option-text{
+     width: 60%;
+    padding: 5px;
+    border-radius: 5px;
+    border: 2px solid #e0e0e0;
+    margin: 3px;
+}
+.select{
+     border: 2px solid #e0e0e0;
+     border-radius: 5px;
+     padding: 5px;
+     margin: 3px;
+     max-width: 90%;
+} .para{
+    margin: 3px;
+}
+.textarea{
+    border: 2px solid #e0e0e0;
+     border-radius: 5px;
+     padding: 5px;
+     margin: 3px;
+     min-width: 95%;
+     max-width: 95%;
+     height: 30px;
+     min-height: 30px;
+}
+.add{
+     /* border: 2px solid black;   */
+      border-radius: 5px;
+     padding: 5px;
+      margin: 5px;
+      display: flex;
+      justify-content: center;
+}
+.button{
+     border-radius: 5px;
+    border: 2px solid #e0e0e0;
+    padding: 10px;
+    font-size: 1rem;
+    margin: 10px;
+    cursor: pointer;
+}
