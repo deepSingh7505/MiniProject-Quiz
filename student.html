@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">
+            <img src="Assets/logo.svg" alt="QuizApp Logo">
+        </div>
+        <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Project</a></li>
+            <li><a href="#">Connect</a></li>
+        </ul>
+        <div class="nav-auth" id="nav-auth-container">
+            </div>
+    </nav>
+
+    <main>
+        <div id="dashboard-view">
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" data-tab="available-quizzes">Available Quizzes</button>
+                <button class="tab-btn" data-tab="my-attempts">My Quiz Library</button>
+            </div>
+
+            <div id="available-quizzes" class="tab-content active">
+                <h2>Available Quizzes</h2>
+                <div class="quiz-list" id="available-list-container">
+                    </div>
+            </div>
+
+            <div id="my-attempts" class="tab-content">
+                <h2>My Quiz Library (Attempts)</h2>
+                <div class="quiz-list" id="attempts-list-container">
+                    </div>
+            </div>
+        </div>
+
+        <div id="quiz-view-container" class="tab-content" style="display: none;">
+            <h2 id="quiz-view-title">Quiz Title</h2>
+            <h3 id="quiz-view-description">Quiz Description</h3>
+            <form id="quiz-attempt-form">
+                <div id="quiz-questions-area">
+                    </div>
+                <button type="submit" class="btn" style="width: auto; margin-top: 2rem;">Submit Quiz</button>
+            </form>
+        </div>
+
+    </main>
+
+    <script src="student.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        th, td {
+            border: 1px solid var(--light-gray);
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+        td button {
+            width: auto;
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">
+            <img src="Assets/logo.svg" alt="QuizApp Logo">
+        </div>
+        <ul class="nav-links">
+            <li><a href="#">Admin Panel</a></li>
+        </ul>
+        <div class="nav-auth" id="nav-auth-container">
+             <a href="index.html" class="btn btn-secondary" style="width: auto; padding: 8px 12px;">Logout</a>
+        </div>
+    </nav>
+
+    <main>
+        <div id="user-management" class="tab-content active">
+            <h2>User Management</h2>
+            <p>View and remove all registered users from local storage.</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list-container">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>
