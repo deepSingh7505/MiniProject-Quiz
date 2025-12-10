@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- AUTHENTICATION & INITIALIZATION ---
-
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-
-    // Auth Check
     if (!currentUser || currentUser.role !== 'teacher') {
         alert('Access Denied. Please log in as a teacher.');
         window.location.href = 'index.html';
@@ -16,8 +13,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM ELEMENTS ---
     const navAuthContainer = document.getElementById('nav-auth-container');
-    const tabs = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+    const dashboardView = document.getElementById('dashboard-view');
+    const profileView = document.getElementById('profile-view');
+    
+    // Dashboard Tabs
+    const dashboardTabs = document.querySelectorAll('.dashboard-tab-btn');
+    const dashboardTabContents = document.querySelectorAll('.dashboard-tab-content');
+    
+    // Profile View
+    const backToDashBtn = document.getElementById('back-to-dash-btn');
+    const profileTabs = document.querySelectorAll('.profile-tab-btn');
+    const profileTabContents = document.querySelectorAll('.profile-tab-content');
+    const changePasswordForm = document.getElementById('change-password-form');
     
     // Create Quiz Form
     const createQuizForm = document.getElementById('create-quiz-form');
@@ -26,93 +33,101 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveQuizBtn = document.getElementById('save-quiz-btn');
     const quizEditIdField = document.getElementById('quiz-edit-id');
 
-    // Library
-    const libraryContainer = document.getElementById('library-list-container');
-    
     // Take/Preview Quiz
-    const previewListContainer = document.getElementById('preview-list-container');
     const quizPreviewArea = document.getElementById('quiz-preview-area');
+
+    // Profile Filter Elements
+    const filterSubject = document.getElementById('filter-subject');
+    const filterStatus = document.getElementById('filter-status');
+    const filterSort = document.getElementById('filter-sort');
+    const pFilteredListContainer = document.getElementById('p-filtered-list-container');
 
 
     // --- INITIALIZE PAGE ---
     function init() {
         // Setup Navbar
         navAuthContainer.innerHTML = `
-            <span>Welcome, ${currentUser.username}</span>
+            <a href="#" id="profile-link">${currentUser.username}</a>
             <button id="logout-btn" class="btn btn-secondary" style="width: auto; padding: 8px 12px;">Logout</button>
         `;
         document.getElementById('logout-btn').addEventListener('click', logout);
-
-        // Setup Tab Listeners
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        document.getElementById('profile-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            loadProfileData(); 
+            showMainView('profile');
         });
 
-        // Setup Form Listeners
+        // Setup Listeners
+        dashboardTabs.forEach(tab => tab.addEventListener('click', () => switchDashboardTab(tab.dataset.tab)));
+        profileTabs.forEach(tab => tab.addEventListener('click', () => switchProfileTab(tab.dataset.tab)));
         addQuestionBtn.addEventListener('click', addQuestion);
         createQuizForm.addEventListener('submit', saveQuiz);
+        backToDashBtn.addEventListener('click', () => showMainView('dashboard'));
+        changePasswordForm.addEventListener('submit', handleChangePassword);
+        
+        // Filter Listeners
+        [filterSubject, filterStatus, filterSort].forEach(el => {
+            el.addEventListener('change', renderFilteredQuizzes);
+        });
 
-        // Event delegation for dynamic buttons (remove question, library actions)
+        // Event delegation
         document.body.addEventListener('click', handleDynamicClicks);
 
         // Load initial data
-        refreshQuizLibrary();
-        refreshPreviewList();
-        addQuestion(); // Add the first question to the form
+        refreshQuizLibrary('library-list-container');
+        refreshPreviewList('preview-list-container');
+        addQuestion();
     }
 
-    // --- NAVIGATION & TABS ---
-
+    // --- NAVIGATION & VIEW MANAGEMENT ---
     function logout() {
         localStorage.removeItem('currentUser');
         window.location.href = 'index.html';
     }
+    
+    function showMainView(viewName) {
+        dashboardView.style.display = (viewName === 'dashboard') ? 'block' : 'none';
+        profileView.style.display = (viewName === 'profile') ? 'block' : 'none';
+    }
 
-    function switchTab(tabId) {
-        // Hide all content
-        tabContents.forEach(content => content.classList.remove('active'));
-        // Deactivate all tabs
-        tabs.forEach(tab => tab.classList.remove('active'));
-
-        // Show selected content and activate tab
+    function switchDashboardTab(tabId) {
+        dashboardTabContents.forEach(content => content.classList.remove('active'));
+        dashboardTabs.forEach(tab => tab.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+        document.querySelector(`.dashboard-tab-btn[data-tab="${tabId}"]`).classList.add('active');
     }
     
-    // --- DYNAMIC CLICK HANDLER (Event Delegation) ---
+    function switchProfileTab(tabId) {
+        profileTabContents.forEach(content => content.classList.remove('active'));
+        profileTabs.forEach(tab => tab.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`.profile-tab-btn[data-tab="${tabId}"]`).classList.add('active');
+    }
     
+    // --- DYNAMIC CLICK HANDLER ---
     function handleDynamicClicks(e) {
-        // Remove Question button
         if (e.target.classList.contains('remove-question-btn')) {
             e.target.closest('.question-card').remove();
         }
         
-        // --- Library Actions ---
         const quizId = e.target.dataset.id;
         if (!quizId) return;
 
-        // Publish/Unpublish
-        if (e.target.classList.contains('publish-btn')) {
-            togglePublish(quizId);
-        }
-        // Edit
-        if (e.target.classList.contains('edit-btn')) {
-            loadQuizForEdit(quizId);
-        }
-        // Delete
-        if (e.target.classList.contains('delete-btn')) {
-            deleteQuiz(quizId);
-        }
-        // Preview (from "Take Quiz" tab)
-        if (e.target.classList.contains('preview-btn')) {
-            loadQuizForPreview(quizId);
+        if (e.target.classList.contains('publish-btn')) togglePublish(quizId);
+        if (e.target.classList.contains('edit-btn')) loadQuizForEdit(quizId);
+        if (e.target.classList.contains('delete-btn')) deleteQuiz(quizId);
+        if (e.target.classList.contains('preview-btn')) loadQuizForPreview(quizId);
+        
+        // --- NEW REPUBLISH ACTION ---
+        if (e.target.classList.contains('republish-btn')) {
+            republishQuiz(quizId);
         }
     }
 
-    // --- QUIZ CREATION (Section 1) ---
-
+    // --- QUIZ CREATION ---
     function addQuestion() {
         questionCounter++;
+        // (Function content is unchanged)
         const questionHtml = `
             <div class="question-card" data-q-index="${questionCounter}">
                 <div class="question-card-header">
@@ -138,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `).join('')}
                 </div>
-                
                 <label class="correct-answer-label">Correct Answer(s):</label>
                 <div class="options-grid" id="q-correct-options-${questionCounter}">
                     ${[1, 2, 3, 4].map(i => `
@@ -151,115 +165,108 @@ document.addEventListener('DOMContentLoaded', () => {
         questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
     }
     
-    // Handle changing between single/multi correct
     document.body.addEventListener('change', e => {
         if (e.target.classList.contains('q-type')) {
+            // (Function content is unchanged)
             const index = e.target.dataset.qIndex;
             const optionsContainer = document.getElementById(`q-correct-options-${index}`);
-            const checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
-            
+            const checkboxes = optionsContainer.querySelectorAll('input');
             if (e.target.value === 'single') {
-                // Change checkboxes to radio buttons
-                checkboxes.forEach(cb => cb.type = 'radio');
-                checkboxes.forEach(cb => cb.name = `q-${index}-correct-group`);
+                checkboxes.forEach(cb => { cb.type = 'radio'; cb.name = `q-${index}-correct-group`; });
             } else {
-                // Change radio buttons back to checkboxes
-                checkboxes.forEach(rb => rb.type = 'checkbox');
-                checkboxes.forEach(rb => rb.name = '');
+                checkboxes.forEach(rb => { rb.type = 'checkbox'; rb.name = ''; });
             }
         }
     });
 
-
+    // --- MODIFIED saveQuiz ---
     function saveQuiz(e) {
         e.preventDefault();
         
         const quizId = quizEditIdField.value;
-        
         const newQuiz = {
-            id: quizId || `q_${new Date().getTime()}`, // Use existing ID if editing
+            id: quizId || `q_${new Date().getTime()}`,
             title: document.getElementById('quiz-title').value,
             description: document.getElementById('quiz-description').value,
             category: document.getElementById('quiz-category').value,
             createdBy: currentUser.username,
-            published: false, // Default to draft
-            questions: []
+            published: false, // Default to draft, will be preserved if editing
+            questions: [],
+            lastUpdated: new Date().toISOString() // --- NEW: Add/Update timestamp ---
         };
 
         const questionCards = questionsContainer.querySelectorAll('.question-card');
+        // (Form validation is unchanged)
         if (questionCards.length === 0) {
             alert('Please add at least one question.');
             return;
         }
-
         let formIsValid = true;
         questionCards.forEach(card => {
-            const index = card.dataset.qIndex;
             const text = card.querySelector('.q-text').value;
             const type = card.querySelector('.q-type').value;
-            
-            const options = [];
-            card.querySelectorAll('.q-option').forEach(opt => options.push(opt.value));
-            
-            const correct = [];
-            card.querySelectorAll('.q-correct:checked').forEach(correctOpt => {
-                correct.push(parseInt(correctOpt.value)); // value is 0-indexed
-            });
-
-            if (!text || options.includes('') || correct.length === 0) {
-                formIsValid = false;
-            }
-
+            const options = Array.from(card.querySelectorAll('.q-option')).map(opt => opt.value);
+            const correct = Array.from(card.querySelectorAll('.q-correct:checked')).map(opt => parseInt(opt.value));
+            if (!text || options.includes('') || correct.length === 0) formIsValid = false;
             newQuiz.questions.push({ text, type, options, correct });
         });
-
         if (!formIsValid) {
-            alert('Please fill out all fields for all questions, and select at least one correct answer.');
+            alert('Please fill out all fields and select correct answers.');
             return;
         }
+        // (End of form validation)
 
         if (quizId) {
-            // Update existing quiz
             const indexToUpdate = quizzes.findIndex(q => q.id === quizId);
-            newQuiz.published = quizzes[indexToUpdate].published; // Preserve published status
+            newQuiz.published = quizzes[indexToUpdate].published; // Preserve status
             quizzes[indexToUpdate] = newQuiz;
         } else {
-            // Add new quiz
             quizzes.push(newQuiz);
         }
 
-        // Save to localStorage
         localStorage.setItem('quizzes', JSON.stringify(quizzes));
+        alert(quizId ? 'Quiz updated successfully! Students will see the update.' : 'Quiz saved successfully!');
         
-        alert(quizId ? 'Quiz updated successfully!' : 'Quiz saved successfully!');
         resetCreateForm();
-        refreshQuizLibrary();
-        refreshPreviewList();
-        switchTab('quiz-library'); // Move to library
+        refreshQuizLibrary('library-list-container');
+        refreshPreviewList('preview-list-container');
+        switchDashboardTab('quiz-library');
     }
 
     function resetCreateForm() {
+        // (Function content is unchanged)
         createQuizForm.reset();
         questionsContainer.innerHTML = '';
-        quizEditIdField.value = ''; // Clear edit ID
+        quizEditIdField.value = '';
         saveQuizBtn.textContent = 'Save Quiz';
         questionCounter = 0;
-        addQuestion(); // Add one blank question
+        addQuestion();
     }
 
 
-    // --- QUIZ LIBRARY (Section 2) ---
+    // --- QUIZ LIBRARY (Refactored) ---
+    function getMyQuizzes() {
+        return quizzes.filter(q => q.createdBy === currentUser.username);
+    }
 
-    function refreshQuizLibrary() {
-        libraryContainer.innerHTML = '';
-        const myQuizzes = quizzes.filter(q => q.createdBy === currentUser.username);
+    // --- MODIFIED refreshQuizLibrary ---
+    function refreshQuizLibrary(targetElementId) {
+        const container = document.getElementById(targetElementId);
+        if (!container) return;
+        container.innerHTML = '';
+        const myQuizzes = getMyQuizzes();
 
         if (myQuizzes.length === 0) {
-            libraryContainer.innerHTML = '<p>You have not created any quizzes yet.</p>';
+            container.innerHTML = '<p>You have not created any quizzes yet.</p>';
             return;
         }
 
         myQuizzes.forEach(quiz => {
+            // --- NEW: Add Republish button if already published ---
+            const republishBtn = quiz.published 
+                ? `<button class="btn btn-warning republish-btn" data-id="${quiz.id}">Republish</button>` 
+                : '';
+
             const quizHtml = `
                 <div class="quiz-list-item">
                     <div class="quiz-info">
@@ -270,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                     </div>
                     <div class="quiz-actions">
-                        <button class="btn btn-secondary publish-btn" data-id="${quiz.id}">
+                        ${republishBtn} <button class="btn btn-secondary publish-btn" data-id="${quiz.id}">
                             ${quiz.published ? 'Unpublish' : 'Publish'}
                         </button>
                         <button class="btn edit-btn" data-id="${quiz.id}">Edit</button>
@@ -278,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
-            libraryContainer.insertAdjacentHTML('beforeend', quizHtml);
+            container.insertAdjacentHTML('beforeend', quizHtml);
         });
     }
 
@@ -286,9 +293,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const quiz = quizzes.find(q => q.id === quizId);
         if (quiz) {
             quiz.published = !quiz.published;
+            quiz.lastUpdated = new Date().toISOString(); // --- NEW: Update timestamp on publish/unpublish
             localStorage.setItem('quizzes', JSON.stringify(quizzes));
-            refreshQuizLibrary(); // Refresh both lists
-            refreshPreviewList();
+            refreshQuizLibrary('library-list-container');
+            refreshPreviewList('preview-list-container');
+        }
+    }
+
+    // --- NEW: republishQuiz function ---
+    function republishQuiz(quizId) {
+        if (!confirm('This will notify students that the quiz is new/updated, even if no changes were made. Are you sure?')) {
+            return;
+        }
+        const quiz = quizzes.find(q => q.id === quizId);
+        if (quiz) {
+            quiz.lastUpdated = new Date().toISOString(); // Just update the timestamp
+            localStorage.setItem('quizzes', JSON.stringify(quizzes));
+            refreshQuizLibrary('library-list-container');
+            alert('Quiz has been republished!');
         }
     }
     
@@ -296,103 +318,79 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Are you sure you want to delete this quiz? This cannot be undone.')) {
             quizzes = quizzes.filter(q => q.id !== quizId);
             localStorage.setItem('quizzes', JSON.stringify(quizzes));
-            refreshQuizLibrary();
-            refreshPreviewList();
+            refreshQuizLibrary('library-list-container');
+            refreshPreviewList('preview-list-container');
         }
     }
 
     function loadQuizForEdit(quizId) {
+        // (Function content is unchanged, but 'saveQuiz' will now update timestamp)
         const quiz = quizzes.find(q => q.id === quizId);
         if (!quiz) return;
-
-        // Switch to the create tab
-        switchTab('create-quiz');
-        
-        // Reset form
+        showMainView('dashboard');
+        switchDashboardTab('create-quiz');
         createQuizForm.reset();
         questionsContainer.innerHTML = '';
         questionCounter = 0;
-
-        // Populate fields
         quizEditIdField.value = quiz.id;
         document.getElementById('quiz-title').value = quiz.title;
         document.getElementById('quiz-description').value = quiz.description;
         document.getElementById('quiz-category').value = quiz.category;
         saveQuizBtn.textContent = 'Update Quiz';
-
-        // Populate questions
         quiz.questions.forEach(q => {
-            addQuestion(); // This increments questionCounter
-            
+            addQuestion();
             document.getElementById(`q-text-${questionCounter}`).value = q.text;
             const typeSelect = document.querySelector(`.q-type[data-q-index="${questionCounter}"]`);
             typeSelect.value = q.type;
-            
-            // Set options
             q.options.forEach((opt, i) => {
                 document.getElementById(`q-${questionCounter}-opt-${i+1}`).value = opt;
             });
-            
-            // Trigger 'change' event to set radio/checkbox
             typeSelect.dispatchEvent(new Event('change'));
-
-            // Set correct answers
-            const correctContainer = document.getElementById(`q-correct-options-${questionCounter}`);
-            q.correct.forEach(correctIndex => { // correctIndex is 0-3
-                correctContainer.querySelector(`input[value="${correctIndex}"]`).checked = true;
+            q.correct.forEach(correctIndex => {
+                document.getElementById(`q-correct-options-${questionCounter}`).querySelector(`input[value="${correctIndex}"]`).checked = true;
             });
         });
     }
 
-    // --- TAKE QUIZ / PREVIEW (Section 3) ---
-
-    function refreshPreviewList() {
-        previewListContainer.innerHTML = '';
-        const myQuizzes = quizzes.filter(q => q.createdBy === currentUser.username);
-
+    // --- TAKE QUIZ / PREVIEW (Refactored) ---
+    function refreshPreviewList(targetElementId) {
+        // (Function content is unchanged)
+        const container = document.getElementById(targetElementId);
+        if (!container) return;
+        container.innerHTML = '';
+        const myQuizzes = getMyQuizzes();
         if (myQuizzes.length === 0) {
-            previewListContainer.innerHTML = '<p>Create a quiz to preview it.</p>';
+            container.innerHTML = '<p>Create a quiz to preview it.</p>';
             return;
         }
-        
         myQuizzes.forEach(quiz => {
             const quizHtml = `
                 <div class="quiz-list-item">
                     <div class="quiz-info">
-                        <h3>${quiz.title}</h3>
-                        <p>Category: ${quiz.category}</p>
+                        <h3>${quiz.title}</h3> <p>Category: ${quiz.category}</p>
                     </div>
                     <div class="quiz-actions">
                         <button class="btn preview-btn" data-id="${quiz.id}">Preview</button>
                     </div>
                 </div>
             `;
-            previewListContainer.insertAdjacentHTML('beforeend', quizHtml);
+            container.insertAdjacentHTML('beforeend', quizHtml);
         });
     }
-
     function loadQuizForPreview(quizId) {
+        // (Function content is unchanged)
         const quiz = quizzes.find(q => q.id === quizId);
         if (!quiz) return;
-
         quizPreviewArea.innerHTML = `<h2>Preview: ${quiz.title}</h2>`;
-
         quiz.questions.forEach((q, qIndex) => {
-            const questionHtml = `
+            quizPreviewArea.innerHTML += `
                 <div class="quiz-question-item">
-                    <p>
-                        ${qIndex + 1}. ${q.text}
-                        <span class="question-type-hint">(${q.type === 'single' ? 'Single Correct' : 'Multiple Correct'})</span>
-                    </p>
+                    <p>${qIndex + 1}. ${q.text} <span class="question-type-hint">(${q.type === 'single' ? 'Single' : 'Multi'} Correct)</span></p>
                     <div class="quiz-options-container">
                         ${q.options.map((opt, oIndex) => `
                             <div class="quiz-option">
-                                <input type="${q.type === 'single' ? 'radio' : 'checkbox'}" 
-                                       name="q-preview-${qIndex}" 
-                                       id="q-preview-${qIndex}-opt-${oIndex}" 
-                                       value="${oIndex}"
-                                       ${q.correct.includes(oIndex) ? 'checked' : ''} 
-                                       disabled>
+                                <input type="${q.type === 'single' ? 'radio' : 'checkbox'}" name="q-preview-${qIndex}" id="q-preview-${qIndex}-opt-${oIndex}" 
+                                       ${q.correct.includes(oIndex) ? 'checked' : ''} disabled>
                                 <label for="q-preview-${qIndex}-opt-${oIndex}" style="${q.correct.includes(oIndex) ? 'font-weight:bold; color:green;' : ''}">
                                     ${opt}
                                 </label>
@@ -401,10 +399,107 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
-            quizPreviewArea.insertAdjacentHTML('beforeend', questionHtml);
         });
-        
         quizPreviewArea.insertAdjacentHTML('beforeend', '<p><i>Preview mode: Correct answers are shown.</i></p>');
+    }
+    
+    // --- NEW PROFILE FUNCTIONS ---
+
+    function loadProfileData() {
+        // Tab: Profile
+        document.getElementById('p-info-username').textContent = currentUser.username;
+        // Tab: My Quizzes
+        refreshQuizLibrary('p-quizzes-list-container'); // Use simplified list for profile
+        // Tab: Statistics
+        loadStatistics();
+        // Tab: Filter
+        renderFilteredQuizzes();
+    }
+
+    function loadStatistics() {
+        // (Function content is unchanged)
+        const container = document.getElementById('p-stats-container');
+        const myQuizzes = getMyQuizzes();
+        const totalQuizzes = myQuizzes.length;
+        const totalPublished = myQuizzes.filter(q => q.published).length;
+        const totalQuestions = myQuizzes.reduce((sum, q) => sum + q.questions.length, 0);
+        container.innerHTML = `
+            <div class="stats-container">
+                <div class="stat-card"><h4>Total Quizzes Created</h4><p>${totalQuizzes}</p></div>
+                <div class="stat-card"><h4>Quizzes Published</h4><p>${totalPublished}</p></div>
+                <div class="stat-card"><h4>Total Questions</h4><p>${totalQuestions}</p></div>
+            </div>
+        `;
+    }
+
+    // --- NEW: Filter Tab Function ---
+    function renderFilteredQuizzes() {
+        let myQuizzes = getMyQuizzes();
+
+        // 1. Filter by Subject
+        const subject = filterSubject.value;
+        if (subject !== 'all') {
+            myQuizzes = myQuizzes.filter(q => q.category === subject);
+        }
+
+        // 2. Filter by Status
+        const status = filterStatus.value;
+        if (status !== 'all') {
+            const isPublished = (status === 'published');
+            myQuizzes = myQuizzes.filter(q => q.published === isPublished);
+        }
+
+        // 3. Sort by Date
+        const sort = filterSort.value;
+        myQuizzes.sort((a, b) => {
+            const dateA = new Date(a.lastUpdated || 0);
+            const dateB = new Date(b.lastUpdated || 0);
+            return (sort === 'newest') ? (dateB - dateA) : (dateA - dateB);
+        });
+
+        // 4. Render
+        pFilteredListContainer.innerHTML = '';
+        if (myQuizzes.length === 0) {
+            pFilteredListContainer.innerHTML = '<p>No quizzes match your filters.</p>';
+            return;
+        }
+        myQuizzes.forEach(quiz => {
+            pFilteredListContainer.innerHTML += `
+                <div class="quiz-list-item">
+                    <div class="quiz-info">
+                        <h3>${quiz.title}</h3>
+                        <p>Category: ${quiz.category} | Last Updated: ${new Date(quiz.lastUpdated).toLocaleDateString()}</p>
+                        <span class="status ${quiz.published ? 'published' : 'draft'}">
+                            ${quiz.published ? 'Published' : 'Draft'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+
+    function handleChangePassword(e) {
+        // (Function content is unchanged)
+        e.preventDefault();
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-new-password').value;
+        if (newPassword !== confirmPassword) {
+            alert('Passwords do not match.');
+            return;
+        }
+        let allUsers = JSON.parse(localStorage.getItem('users'));
+        let userIndex = allUsers.findIndex(u => u.username === currentUser.username);
+        if (userIndex > -1) {
+            allUsers[userIndex].password = newPassword;
+            localStorage.setItem('users', JSON.stringify(allUsers));
+            currentUser.password = newPassword;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            alert('Password updated successfully!');
+            changePasswordForm.reset();
+        } else {
+            alert('Error: Could not find user.');
+        }
     }
 
     // --- START THE APPLICATION ---

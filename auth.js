@@ -2,7 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize localStorage if it doesn't exist
     if (!localStorage.getItem('users')) {
-        localStorage.setItem('users', JSON.stringify([]));
+        // Create the default 'Deep' admin user
+        const defaultUsers = [
+            {
+                username: "admin",
+                password: "1212", // In a real app, hash this!
+                role: "admin"
+            }
+        ];
+        localStorage.setItem('users', JSON.stringify(defaultUsers));
     }
     if (!localStorage.getItem('quizzes')) {
         localStorage.setItem('quizzes', JSON.stringify([]));
@@ -20,10 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
+            const role = document.getElementById('role').value; // Role from dropdown
 
             const users = JSON.parse(localStorage.getItem('users'));
             
+            // --- SIMPLIFIED LOGIN CHECK ---
+            // Find a user that matches all three fields
             const user = users.find(
                 (u) => u.username === username && u.password === password && u.role === role
             );
@@ -32,8 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Save current user to localStorage
                 localStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Redirect to the correct dashboard
-                if (user.role === 'teacher') {
+                // Redirect to the correct dashboard based on role
+                if (user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else if (user.role === 'teacher') {
                     window.location.href = 'teacher.html';
                 } else {
                     window.location.href = 'student.html';
@@ -52,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             const role = document.getElementById('role').value;
+
+            // Admin cannot register from this page
+            if (role === 'admin') {
+                alert('Admin registration is not allowed from this page.');
+                return;
+            }
 
             if (password !== confirmPassword) {
                 alert('Passwords do not match.');
